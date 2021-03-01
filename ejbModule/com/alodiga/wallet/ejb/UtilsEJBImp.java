@@ -1324,6 +1324,17 @@ public class UtilsEJBImp extends AbstractWalletEJB implements UtilsEJB, UtilsEJB
             }
             return operations;
     }
+    
+    @Override
+    public List<AffiliationRequest> getAffiliationRequestByLegalPerson(EJBRequest request) throws GeneralException, NullParameterException, EmptyListException {
+        List<AffiliationRequest> affiliationRequestList = null;
+        Map<String, Object> params = request.getParams();
+        if (!params.containsKey(EjbConstants.PARAM_LEGAL_PERSON_ID)) {
+            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), EjbConstants.PARAM_LEGAL_PERSON_ID), null);
+        }
+        affiliationRequestList = (List<AffiliationRequest>) getNamedQueryResult(AffiliationRequest.class, QueryConstants.AFFILIATION_REQUEST_BY_LEGAL_PERSON, request, getMethodName(), logger, "affiliationRequestList");
+        return affiliationRequestList;
+    }
 
     @Override
     public boolean validateStatusBusinessAffiliationHasFinalState(Integer statusId, Integer finalId) throws GeneralException, NullParameterException {
@@ -1917,6 +1928,15 @@ public class UtilsEJBImp extends AbstractWalletEJB implements UtilsEJB, UtilsEJB
         }
         requestTypes = (List<RequestType>) getNamedQueryResult(RequestType.class, "RequestType.findByCode", request, getMethodName(), logger, "code");
         return requestTypes.get(0);
+    }
+
+    @Override
+    public Long haveAffiliationRequestByUser(Long userId) throws GeneralException, NullParameterException {
+        StringBuilder sqlBuilder = new StringBuilder("SELECT COUNT(ar.id) FROM affiliation_request ar WHERE ar.userRegisterUnifiedId = ?1");
+        Query query = entityManager.createNativeQuery(sqlBuilder.toString());
+        query.setParameter("1", userId);
+        List result = (List) query.setHint("toplink.refresh", "true").getResultList();
+        return result.get(0) != null ? (Long) result.get(0) : 0l;
     }
 
 }

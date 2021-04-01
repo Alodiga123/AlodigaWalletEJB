@@ -441,9 +441,9 @@ public class ProductEJBImp extends AbstractWalletEJB implements ProductEJB, Prod
     }
 
     @Override
-    public TransactionApproveRequest updateTransactionApproveRequest(TransactionApproveRequest transactionApproveRequest) throws RegisterNotFoundException, NullParameterException, GeneralException, NegativeBalanceException {
+    public TransactionApproveRequest updateTransactionApproveRequest(TransactionApproveRequest transactionApproveRequest, String movilPhone) throws RegisterNotFoundException, NullParameterException, GeneralException, NegativeBalanceException {
         BalanceHistory balancehistory = null;
-       Float totalTransactionAmount;
+        Float totalTransactionAmount;
         productEJB = (ProductEJB) EJBServiceLocator.getInstance().get(EjbConstants.PRODUCT_EJB);
         if (transactionApproveRequest == null) {
             throw new NullParameterException("transactionApproveRequest", null);
@@ -454,25 +454,27 @@ public class ProductEJBImp extends AbstractWalletEJB implements ProductEJB, Prod
                     if (!commissionItems.isEmpty()) {
                         totalTransactionAmount = calculateTotalTransactionAmount(commissionItems.get(0),transactionApproveRequest.getTransactionId().getAmount());
                         transactionApproveRequest = saveTransactionApproveRequest(transactionApproveRequest);
-                        if (transactionApproveRequest.getTransactionId().getTransactionSourceId().getCode().equals(TransactionSourceE.APPBIL.getTransactionSourceCode())) {
-                            balancehistory = createBalanceHistory(transactionApproveRequest.getUnifiedRegistryUserId().longValue(),null,transactionApproveRequest.getProductId(),totalTransactionAmount,transactionApproveRequest.getTransactionId().getTransactionTypeId().getId().intValue());
-                        } else {
-                            balancehistory = createBalanceHistory(null,transactionApproveRequest.getBusinessId().longValue(),transactionApproveRequest.getProductId(),totalTransactionAmount,transactionApproveRequest.getTransactionId().getTransactionTypeId().getId().intValue());
-                        }                        
-                        balancehistory.setTransactionId(transactionApproveRequest.getTransactionId());
-                        saveBalanceHistory(balancehistory);
+                        if (transactionApproveRequest.getTransactionId().getTransactionTypeId().getCode().equals(TransactionTypeE.MANREC.getTransactionTypeCode())) {
+                            if (transactionApproveRequest.getTransactionId().getTransactionSourceId().getCode().equals(TransactionSourceE.APPBIL.getTransactionSourceCode())) {
+                                balancehistory = createBalanceHistory(transactionApproveRequest.getUnifiedRegistryUserId().longValue(),null,transactionApproveRequest.getProductId(),totalTransactionAmount,transactionApproveRequest.getTransactionId().getTransactionTypeId().getId().intValue());
+                            } else {
+                                balancehistory = createBalanceHistory(null,transactionApproveRequest.getBusinessId().longValue(),transactionApproveRequest.getProductId(),totalTransactionAmount,transactionApproveRequest.getTransactionId().getTransactionTypeId().getId().intValue());
+                            } 
+                            balancehistory.setTransactionId(transactionApproveRequest.getTransactionId());
+                            saveBalanceHistory(balancehistory);
+                        }                                                
                         try {
-                            if (transactionApproveRequest.getTransactionId().getTransactionTypeId().getId().longValue() == 6) {
-                                SendSmsThread sendMailTherad = new SendSmsThread("584166229052",totalTransactionAmount,transactionApproveRequest.getRequestNumber(),
+                            if (transactionApproveRequest.getTransactionId().getTransactionTypeId().getCode().equals(TransactionTypeE.MANREC.getTransactionTypeCode())) {
+                                SendSmsThread sendMailTherad = new SendSmsThread(movilPhone,totalTransactionAmount,transactionApproveRequest.getRequestNumber(),
                                 Constants.SEND_TYPE_SMS_RECHARGE,transactionApproveRequest.getUnifiedRegistryUserId().longValue(),entityManager);
                                 sendMailTherad.run();
                             } else {
                                 if (transactionApproveRequest.getTransactionId().getTransactionSourceId().getCode().equals(TransactionSourceE.APPBIL.getTransactionSourceCode())) {
-                                    SendSmsThread sendMailTherad = new SendSmsThread("584166229052",totalTransactionAmount,transactionApproveRequest.getRequestNumber(),
+                                    SendSmsThread sendMailTherad = new SendSmsThread(movilPhone,totalTransactionAmount,transactionApproveRequest.getRequestNumber(),
                                     Constants.SEND_TYPE_SMS_WITHDRAWALS,transactionApproveRequest.getUnifiedRegistryUserId().longValue(),entityManager);
                                     sendMailTherad.run();
                                 } else {
-                                    SendSmsThread sendMailTherad = new SendSmsThread("584166229052",totalTransactionAmount,transactionApproveRequest.getRequestNumber(),
+                                    SendSmsThread sendMailTherad = new SendSmsThread(movilPhone,totalTransactionAmount,transactionApproveRequest.getRequestNumber(),
                                     Constants.SEND_TYPE_SMS_WITHDRAWALS,transactionApproveRequest.getBusinessId().longValue(),entityManager);
                                     sendMailTherad.run();
                                 }                               
@@ -524,9 +526,6 @@ public class ProductEJBImp extends AbstractWalletEJB implements ProductEJB, Prod
         switch (transactionType) {
             case 6: //incrementar el saldo
                 newCurrentAmount = currentAmount + totalTransactionAmount;//SUMO AL MONTO ACTUAL (EL DESTINO)
-                break;
-            case 5: //descontar el saldo
-                newCurrentAmount = currentAmount - totalTransactionAmount;
                 break;
         }
         if (newCurrentAmount < 0) {

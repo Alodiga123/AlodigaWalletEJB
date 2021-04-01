@@ -651,6 +651,7 @@ public class BusinessPortalEJBImp extends AbstractWalletEJB implements BusinessP
         EJBRequest request = new EJBRequest();
         request.setParam(id);
         AffiliationRequest affiliationRequest = (AffiliationRequest) loadEntity(AffiliationRequest.class, request,logger, getMethodName());
+        entityManager.refresh(affiliationRequest);
         return affiliationRequest;
     }
 

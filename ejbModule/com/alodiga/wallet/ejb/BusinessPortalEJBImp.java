@@ -773,6 +773,7 @@ public class BusinessPortalEJBImp extends AbstractWalletEJB implements BusinessP
     public AffiliationRequest saveLegalPersonAffiliationRequest(Person person, LegalPerson legalPerson,
                 RequestType requestType, PhonePerson phonePerson, Address address, LegalRepresentative legalRepresentative)
                 throws NullParameterException, GeneralException {
+        
         if (person == null || legalPerson == null || legalRepresentative == null || requestType == null
                         || phonePerson == null || address == null) {
                 throw new NullParameterException(EjbConstants.ERR_NULL_PARAMETER);
@@ -791,7 +792,7 @@ public class BusinessPortalEJBImp extends AbstractWalletEJB implements BusinessP
                 person.setPersonClassificationId(personClassification);
                 person = (Person) saveEntity(person);
 
-                // Se guarda el objeto NaturalPerson en la BD
+                // Se guarda el objeto LegalPerson en la BD
                 legalPerson.setPersonId(person);
                 legalPerson.setCreateDate(new Date());
                 saveEntity(legalPerson);
@@ -811,6 +812,10 @@ public class BusinessPortalEJBImp extends AbstractWalletEJB implements BusinessP
                 legalRepresentative.setCreateDate(new Date());
                 legalRepresentative.setPersonId(legalRepresentativePerson);
                 saveEntity(legalRepresentative);
+                
+                //Asocia el representante legal al person relacionado
+                legalRepresentativePerson.setLegalRepresentative(legalRepresentative);
+                saveEntity(legalRepresentativePerson);
 
                 legalPerson.setLegalRepresentativeId(legalRepresentative);
                 saveEntity(legalPerson);

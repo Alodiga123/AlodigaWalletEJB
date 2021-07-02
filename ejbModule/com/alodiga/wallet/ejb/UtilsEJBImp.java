@@ -1310,11 +1310,11 @@ public class UtilsEJBImp extends AbstractWalletEJB implements UtilsEJB, UtilsEJB
             StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM affiliation_request t WHERE ");
             
             if (params.containsKey(QueryConstants.PARAM_USER_REGISTER_ID)) {
-                sqlBuilder.append("t.userRegisterUnifiedId=").append(params.get(QueryConstants.PARAM_USER_REGISTER_ID));
+                sqlBuilder.append("t.userRegisterUnifiedId=").append(params.get(QueryConstants.PARAM_USER_REGISTER_ID)).append("");
             }
             
             if (params.containsKey(QueryConstants.PARAM_BUSINESS_PERSON_ID)) {
-                sqlBuilder.append("t.businessPersonId=").append(params.get(QueryConstants.PARAM_BUSINESS_PERSON_ID));
+                sqlBuilder.append("t.businessPersonId=").append(params.get(QueryConstants.PARAM_BUSINESS_PERSON_ID)).append("");
             }
             
             Query query = entityManager.createNativeQuery(sqlBuilder.toString(), AffiliationRequest.class);
@@ -1957,6 +1957,17 @@ public class UtilsEJBImp extends AbstractWalletEJB implements UtilsEJB, UtilsEJB
         query.setParameter("3", accountNumber);        
         List result = (List) query.setHint("toplink.refresh", "true").getResultList();
         return result.get(0) != null ? (Long) result.get(0) : 0l;
+    }
+
+    @Override
+    public List<AffiliationRequest> getAffiliationRequestByNaturalPerson(EJBRequest request) throws GeneralException, NullParameterException, EmptyListException {
+        List<AffiliationRequest> affiliationRequestList = null;
+        Map<String, Object> params = request.getParams();
+        if (!params.containsKey(EjbConstants.PARAM_PERSON_ID)) {
+            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), EjbConstants.PARAM_PERSON_ID), null);
+        }
+        affiliationRequestList = (List<AffiliationRequest>) getNamedQueryResult(AffiliationRequest.class, QueryConstants.AFFILIATION_REQUEST_BY_PERSON, request, getMethodName(), logger, "affiliationRequestList");
+        return affiliationRequestList;
     }
 
 }
